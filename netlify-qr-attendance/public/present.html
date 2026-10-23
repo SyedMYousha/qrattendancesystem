@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan to mark attendance</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="projector">
+  <h1 id="heading">Loading...</h1>
+  <div class="qr" id="qr" role="img" aria-label="QR code for this attendance session"></div>
+  <p style="margin-top:1rem">Or open <b id="link"></b></p>
+  <div class="count"><span id="count">0</span> marked &middot; <span id="timer">--</span></div>
+  <a class="btn ghost" id="back" style="color:#fff;border-color:#fff" href="/admin.html">Back to session</a>
+  <script src="/js/vendor/qrcode.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/present.js"></script>
+</body>
+</html>

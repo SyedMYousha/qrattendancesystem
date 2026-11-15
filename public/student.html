@@ -15,6 +15,7 @@ async function load(){const m=await api('/api/me');if(m.role!=='student')return 
  $('#cls').innerHTML=list.map(c=>`<div class="card"><div class="row" style="justify-content:space-between;align-items:start"><div><b>${esc(c.code)}</b><div>${esc(c.name)}</div><div class="mute" style="font-size:.85rem">${esc(timing(c))}</div></div>${c.open?'<span class="chip ok">Session open</span>':''}</div>
  <p class="big" style="margin:14px 0 6px;color:${c.low?'var(--bad)':'var(--ink)'}">${c.pct==null?'–':c.pct+'%'}</p>${bar(c.pct??0)}
  <p class="mute" style="margin:6px 0">${c.present} of ${c.total} classes attended</p>
+ <p class="chip">Current streak: ${c.streak} session${c.streak===1?'':'s'}</p>
  ${c.low?`<p class="chip bad">Below 75%: attend the next ${c.mustAttend} in a row</p>`:c.canMiss!=null?`<p class="chip ok">You can miss ${c.canMiss} more and stay above 75%</p>`:''}
  <div class="row" style="margin-top:10px"><button onclick="openScan()">Scan QR</button><button class="alt" onclick="hist(${c.id})">History</button></div></div>`).join('')}
 async function hist(id){const c=list.find(x=>x.id===id),h=await api(`/api/s/classes/${id}/history`);$('#ht').textContent=`${c.code} history`;

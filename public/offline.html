@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0d121c">
+  <title>Offline – QR Attendance</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    main{max-width:620px;margin:6vh auto;text-align:center}
+    canvas{display:block;width:100%;height:220px;border:1px solid var(--line);border-radius:10px;background:var(--card);touch-action:manipulation}
+  </style>
+</head>
+<body>
+<main>
+  <section>
+    <h1>You're offline</h1>
+    <p class="mute">Attendance needs a connection, but you can play while you wait.</p>
+    <canvas id="game" aria-label="Offline jumping game. Tap, click, or press Space to jump over obstacles."></canvas>
+    <p id="score" aria-live="polite">Score: 0 · Tap, click, or press Space to jump</p>
+    <button id="restart" class="alt" type="button">Restart game</button>
+    <p><a href="/"><button type="button">Try reconnecting</button></a></p>
+  </section>
+</main>
+<script>
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),label=document.querySelector('#score');
+let player,obstacles,score,speed,playing,last=0,frame;
+function resize(){const box=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;canvas.width=box.width*ratio;canvas.height=box.height*ratio;ctx.setTransform(ratio,0,0,ratio,0,0)}
+function reset(){cancelAnimationFrame(frame);player={y:0,velocity:0};obstacles=[];score=0;speed=4;playing=true;last=0;frame=requestAnimationFrame(draw)}
+function jump(){if(!playing){reset();return}if(player.y===0)player.velocity=-11}
+function draw(time){
+  if(!playing)return;
+  const width=canvas.clientWidth,height=canvas.clientHeight,ground=height-28,delta=Math.min(32,time-last||16);last=time;
+  ctx.clearRect(0,0,width,height);ctx.strokeStyle='#5f6b80';ctx.beginPath();ctx.moveTo(0,ground);ctx.lineTo(width,ground);ctx.stroke();
+  player.velocity+=.55*delta/16;player.y=Math.min(0,player.y+player.velocity*delta/16);if(player.y===0)player.velocity=0;
+  ctx.fillStyle='#6b93ff';ctx.fillRect(48,ground-24+player.y,22,24);
+  if(!obstacles.length||obstacles[obstacles.length-1].x<width-160)obstacles.push({x:width+10,w:16+Math.random()*12,h:20+Math.random()*22});
+  ctx.fillStyle='#38d39f';
+  for(const obstacle of obstacles){obstacle.x-=speed*delta/16;ctx.fillRect(obstacle.x,ground-obstacle.h,obstacle.w,obstacle.h);
+    if(obstacle.x<70&&obstacle.x+obstacle.w>48&&ground-obstacle.h<ground-24+player.y+24){playing=false;label.textContent='Game over · Score: '+score+' · Tap or press Space to try again';return}}
+  obstacles=obstacles.filter(o=>o.x>-40);
+  if(obstacles.length&&obstacles[0].x+obstacles[0].w<48){score++;speed=Math.min(8,speed+.04);obstacles.shift()}
+  label.textContent='Score: '+score+' · Tap, click, or press Space to jump';frame=requestAnimationFrame(draw)
+}
+canvas.addEventListener('pointerdown',jump);
+document.querySelector('#restart').addEventListener('click',reset);
+window.addEventListener('keydown',event=>{if(event.code==='Space'){event.preventDefault();jump()}});
+window.addEventListener('resize',resize);
+resize();reset();
+</script>
+</body>
+</html>

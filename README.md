@@ -14,6 +14,11 @@ Phones must be on the same Wi-Fi. If QR links show the wrong IP: set `BASE_URL=h
 4. Students log in (roll + PIN) and scan with their phone camera, or use Scan QR in the app (needs HTTPS).
 5. Reports: date filter, trend chart, per-session and per-student %, student history, CSV export (opens in Excel). Proxy alerts tab lists blocked attempts.
 
+## Personalization and offline game
+- Use **Dark theme** / **Light theme** on each page to switch appearance. The selection is saved in this browser; the first visit follows the device theme.
+- Student class cards show the current streak of consecutive attended sessions for that class. A late attendance counts; an unmarked session breaks the streak. Sessions still in progress are not counted yet.
+- The app caches its pages for offline use and opens a small jumping game when a page cannot load because the connection is unavailable. Attendance and login still require a connection. Service workers work on `localhost` or HTTPS; plain HTTP on a phone's Wi-Fi IP does not support offline caching.
+
 ## Proxy (false attendance) defences
 - **A. Student login:** attendance is saved against the logged-in account, so typing a friend's roll number does nothing. PINs are salted + hashed (scrypt); 5 wrong tries locks that roll for 5 minutes.
 - **B. Rotating QR:** the QR holds `sessionId.code`, where `code = HMAC(secret, time-window)`. Windows are 20 s; a code works for its window plus the previous one (max 40 s), so a forwarded screenshot expires quickly.

@@ -155,7 +155,13 @@ SR.get('/classes', (req, res) => res.json(all('SELECT c.* FROM courses c JOIN en
   const total = one('SELECT COUNT(*) n FROM sessions WHERE course_id=?', c.id).n;
   const present = one('SELECT COUNT(*) n FROM attendance a JOIN sessions s ON s.id = a.session_id WHERE s.course_id = ? AND a.student_id = ?', c.id, req.me.id).n;
   const p = pct(present, total), low = total > 0 && p < 75;
-  return { ...c, total, present, pct: total ? p : null, low, canMiss: total && !low ? Math.max(0, Math.floor(present / 0.75 - total)) : null, mustAttend: low ? Math.ceil(3 * total - 4 * present) : 0, open: !!one('SELECT 1 x FROM sessions WHERE course_id=? AND closed=0 AND date=?', c.id, today()) };
+  const date = today(), time = new Date().toTimeString().slice(0, 5);
+  const recent = all(`SELECT a.id attended FROM sessions s LEFT JOIN attendance a ON a.session_id=s.id AND a.student_id=?
+    WHERE s.course_id=? AND (s.date < ? OR (s.date=? AND s.end_time <= ?))
+    ORDER BY s.date DESC,s.start_time DESC`, req.me.id, c.id, date, date, time);
+  let streak = 0;
+  for (const session of recent) { if (!session.attended) break; streak++; }
+  return { ...c, total, present, streak, pct: total ? p : null, low, canMiss: total && !low ? Math.max(0, Math.floor(present / 0.75 - total)) : null, mustAttend: low ? Math.ceil(3 * total - 4 * present) : 0, open: !!one('SELECT 1 x FROM sessions WHERE course_id=? AND closed=0 AND date=?', c.id, today()) };
 })));
 SR.get('/classes/:id/history', (req, res) => res.json(history(req.params.id, req.me.id)));
 SR.post('/pin', wrap((req, res) => {

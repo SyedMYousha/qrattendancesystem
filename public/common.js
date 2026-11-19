@@ -1,6 +1,8 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const savedTheme=localStorage.getItem('qr-theme');
 document.documentElement.dataset.theme=savedTheme|| (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+const savedMotion=localStorage.getItem('qr-motion');
+document.documentElement.dataset.motion=savedMotion||(matchMedia('(prefers-reduced-motion: reduce)').matches?'reduce':'full');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function toast(m){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.setAttribute('role','status');document.body.append(t)}t.textContent=m;t.classList.remove('hide');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.add('hide'),3500)}
 async function api(u,m='GET',b){const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});let j={};try{j=await r.json()}catch{}
@@ -21,6 +23,16 @@ function setupTheme(){
   update();
 }
 setupTheme();
+function setupMotion(){
+  if(location.pathname==='/projector.html')return;
+  const b=document.createElement('button');b.type='button';b.className='alt motion-toggle';
+  const update=()=>{const reduced=document.documentElement.dataset.motion==='reduce';b.textContent=reduced?'Motion: reduced':'Reduce motion';b.setAttribute('aria-pressed',String(reduced))};
+  b.onclick=()=>{const motion=document.documentElement.dataset.motion==='reduce'?'full':'reduce';document.documentElement.dataset.motion=motion;localStorage.setItem('qr-motion',motion);update()};
+  const top=$('.top');
+  if(top)top.append(b);else{b.classList.add('motion-fixed');document.body.append(b)}
+  update();
+}
+setupMotion();
 function setupOfflineGame(){
   const link=document.createElement('a');link.href='/offline.html';link.textContent='Play offline game';link.className='offline-game-link';
   const update=()=>link.classList.toggle('show',!navigator.onLine&&location.pathname!=='/offline.html');

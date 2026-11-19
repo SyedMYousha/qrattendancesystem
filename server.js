@@ -1,10 +1,18 @@
 // QR Attendance v2 – Express + built-in SQLite. Run: npm install && npm start
 const express = require('express'), { DatabaseSync } = require('node:sqlite'), QRCode = require('qrcode');
-const crypto = require('crypto'), os = require('os'), path = require('path');
+const crypto = require('crypto'), path = require('path'), os = require('os');
 const PORT = process.env.PORT || 3000, TEACHER_PASS = process.env.ADMIN_PASS || 'admin123';
 const WIN = 20000, LATE_MIN = 10, ROLL = /^EE-26\d{3}$/;           // QR rotates every 20 s; late after 10 min
-const lan = Object.values(os.networkInterfaces()).flat().find(i => i.family === 'IPv4' && !i.internal);
-const BASE_URL = process.env.BASE_URL || `http://${lan ? lan.address : 'localhost'}:${PORT}`;
+const BASE_URL = process.env.BASE_URL?.replace(/\/$/, '') || null;
+const getLanAddresses = () => Object.values(os.networkInterfaces()).flat()
+  .filter(a => a && !a.internal && a.family === 'IPv4')
+  .map(a => `http://${a.address}:${PORT}`);
+const qrBaseUrl = req => {
+  if (BASE_URL) return BASE_URL;
+  const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').split(',')[0].trim();
+  const protocol = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+  return host ? `${protocol}://${host}` : `http://localhost:${PORT}`;
+};
 
 const db = new DatabaseSync(path.join(__dirname, 'data.db'));
 db.exec(`PRAGMA foreign_keys = ON;
@@ -121,10 +129,12 @@ T.get('/sessions/:id/live', wrap(async (req, res) => {
   const s = one('SELECT s.*, c.code ccode, c.name cname FROM sessions s JOIN courses c ON c.id = s.course_id WHERE s.id = ?', req.params.id);
   if (!s) return res.status(404).json({ error: 'Session not found' });
   const w = win(), key = `${s.id}-${w}`;
-  if (!qrCache.has(key)) { if (qrCache.size > 30) qrCache.clear(); qrCache.set(key, await QRCode.toDataURL(`${BASE_URL}/a/${s.id}.${code(s.secret, w)}`, { width: 520, margin: 2 })); }
+  const baseUrl = qrBaseUrl(req);
+  const qrKey = `${baseUrl}-${key}`;
+  if (!qrCache.has(qrKey)) { if (qrCache.size > 30) qrCache.clear(); qrCache.set(qrKey, await QRCode.toDataURL(`${baseUrl}/a/${s.id}.${code(s.secret, w)}`, { width: 520, margin: 2 })); }
   const recent = all(`SELECT st.name, st.roll, a.timestamp, a.status FROM attendance a JOIN students st ON st.id = a.student_id WHERE a.session_id = ? ORDER BY a.id DESC LIMIT 6`, s.id);
   const present = one('SELECT COUNT(*) n FROM attendance a JOIN enrollments e ON e.student_id = a.student_id AND e.course_id = ? WHERE a.session_id = ?', s.course_id, s.id).n;
-  res.json({ qr: qrCache.get(key), left: (w + 1) * WIN - Date.now(), win: WIN, closed: !!s.closed, code: s.ccode, name: s.cname, date: s.date, start: s.start_time, end: s.end_time, present, total: one('SELECT COUNT(*) n FROM enrollments WHERE course_id=?', s.course_id).n, recent });
+  res.json({ qr: qrCache.get(qrKey), left: (w + 1) * WIN - Date.now(), win: WIN, closed: !!s.closed, code: s.ccode, name: s.cname, date: s.date, start: s.start_time, end: s.end_time, present, total: one('SELECT COUNT(*) n FROM enrollments WHERE course_id=?', s.course_id).n, recent });
 }));
 
 T.get('/flags', (req, res) => res.json(all(flagSql + ' WHERE s.course_id = ? ORDER BY f.id DESC', req.query.course_id)));
@@ -190,4 +200,7 @@ SR.post('/attend', wrap((req, res) => {
 // ---------- pages ----------
 app.get('/a/:t', (req, res) => { const m = me(req); if (m?.role === 'student') return res.sendFile(path.join(__dirname, 'public/scan.html')); res.redirect('/?next=' + encodeURIComponent(req.originalUrl)); });
 app.use(express.static(path.join(__dirname, 'public')));
-app.listen(PORT, '0.0.0.0', () => console.log(`Open:  http://localhost:${PORT}\nQR links use: ${BASE_URL}\nTeacher password: ${TEACHER_PASS}`));
+app.listen(PORT, '0.0.0.0', () => {
+  const addresses = getLanAddresses();
+  console.log(`Open: http://localhost:${PORT}${addresses.length ? `\nLAN: ${addresses.join(', ')}` : ''}\nQR links use the address in the browser, or BASE_URL when set.\nTeacher password: ${TEACHER_PASS}`);
+});

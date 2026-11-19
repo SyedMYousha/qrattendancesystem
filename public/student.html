@@ -1,23 +1,61 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My classes – QR Attendance</title><link rel="stylesheet" href="/style.css"></head><body>
 <header class="top"><h1 id="who">Loading…<small id="roll"></small></h1><button class="alt" onclick="logout()">Log out</button></header>
 <main>
+<section class="welcome-panel"><div><h2 id="welcome">Welcome back</h2><p id="welcomeMeta" class="mute" style="margin:0"></p></div><div id="welcomeStats" class="welcome-stats"></div></section>
 <section><h2>Attendance overview</h2><div id="chart" class="mute"></div></section>
+<section><h2>Achievements</h2><p class="mute" style="margin:-6px 0 12px">Personal milestones for your total attended class sessions.</p><div id="achievements" class="achievement-list"></div></section>
 <h2 style="margin:20px 0 12px">My classes</h2><div id="cls" class="grid"></div>
 <section style="margin-top:16px"><details><summary style="cursor:pointer;font-weight:600">Change PIN</summary><form id="pf" class="row" style="margin-top:12px"><label>Current PIN<input id="op" type="password" inputmode="numeric" required></label><label>New PIN (4–8 digits)<input id="np" type="password" inputmode="numeric" required></label><button>Save PIN</button></form></details></section>
 </main>
 <dialog id="hd"><h2 id="ht"></h2><div class="wrap" style="max-height:55vh"><table><thead><tr><th>Date</th><th>Time</th><th>Status</th></tr></thead><tbody id="hb"></tbody></table></div><p><button class="alt" onclick="$('#hd').close()">Close</button></p></dialog>
 <dialog id="sd"><h2>Scan QR code</h2><video id="v" playsinline muted></video><p id="sm" class="mute"></p><p><button class="alt" onclick="stopScan()">Cancel</button></p></dialog>
 <script src="/common.js"></script><script>
-let list=[],stream,timer;
-async function load(){const m=await api('/api/me');if(m.role!=='student')return location.href='/';$('#who').firstChild.textContent=m.name;$('#roll').textContent=m.roll;
+const courseColors=['#6750a4','#006874','#8c4a60','#486b3f','#845400'],milestones=[5,10,20];
+let list=[],stream,timer,studentRoll='',calendarHistory=new Map(),calendarMonths=new Map();
+function courseIcon(c){const code=c.code.toUpperCase(),name=c.name.toLowerCase();if(code.startsWith('EE')||name.includes('elect'))return '⚡';if(/^(CS|IT|CSE)/.test(code)||name.includes('computer'))return '⌨';if(name.includes('math')||name.includes('calculus'))return '∑';if(name.includes('chem'))return '⚗';return '▣'}
+async function load(){const m=await api('/api/me');if(m.role!=='student')return location.href='/';studentRoll=m.roll;$('#who').firstChild.textContent=m.name;$('#roll').textContent=m.roll;$('#welcome').textContent=`Welcome back, ${m.name}`;
  list=await api('/api/s/classes');
+ const attended=list.reduce((sum,c)=>sum+c.present,0),leader=[...list].sort((a,b)=>b.streak-a.streak)[0];
+ $('#welcomeMeta').textContent=list.length?`${attended} attended class session${attended===1?'':'s'} in total.`:'Your classes and progress will appear here once you are enrolled.';
+ $('#welcomeStats').innerHTML=`<div class="welcome-stat"><b>${attended}</b><span>Sessions attended</span></div><div class="welcome-stat"><b>${leader?.streak||0}</b><span>${leader?`Top current streak · ${esc(leader.code)}`:'Current streak'}</span></div>`;
  $('#chart').innerHTML=list.length?list.map(c=>`<div class="row" style="margin-bottom:8px;align-items:center"><span style="width:90px"><b>${esc(c.code)}</b></span><div style="flex:1;min-width:120px">${bar(c.pct??0)}</div><span style="width:56px;text-align:right">${c.pct==null?'–':c.pct+'%'}</span></div>`).join(''):'You are not enrolled in any class yet. Ask your teacher.';
- $('#cls').innerHTML=list.map(c=>`<div class="card"><div class="row" style="justify-content:space-between;align-items:start"><div><b>${esc(c.code)}</b><div>${esc(c.name)}</div><div class="mute" style="font-size:.85rem">${esc(timing(c))}</div></div>${c.open?'<span class="chip ok">Session open</span>':''}</div>
- <p class="big" style="margin:14px 0 6px;color:${c.low?'var(--bad)':'var(--ink)'}">${c.pct==null?'–':c.pct+'%'}</p>${bar(c.pct??0)}
- <p class="mute" style="margin:6px 0">${c.present} of ${c.total} classes attended</p>
- <p class="chip">Current streak: ${c.streak} session${c.streak===1?'':'s'}</p>
+ $('#achievements').innerHTML=milestones.map(n=>{const earned=attended>=n;return `<div class="achievement-card ${earned?'earned':''}"><span class="achievement-icon" aria-hidden="true">${earned?'★':'☆'}</span><b>${n} attended sessions</b><small>${earned?'Milestone earned':'Keep going to unlock'}</small><span class="chip ${earned?'ok':''}">${earned?'Earned':'Locked'}</span></div>`}).join('');
+ $('#cls').innerHTML=list.map(c=>{const color=courseColors[c.id%courseColors.length],progress=Math.max(0,Math.min(100,c.pct??0));return `<article class="card class-card" style="--course-color:${color}"><div class="class-head"><div class="course-title"><span class="course-icon" aria-hidden="true">${courseIcon(c)}</span><div><b>${esc(c.code)}</b><div>${esc(c.name)}</div><div class="mute">${esc(timing(c))}</div></div></div>${c.open?'<span class="chip ok">Session open</span>':''}</div>
+ <div class="class-metrics"><div class="progress-ring" style="--progress:${progress}%" role="img" aria-label="Attendance ${c.pct==null?'not available':c.pct+' percent'}"><span>${c.pct==null?'–':c.pct+'%'}</span></div><div style="flex:1"><p class="mute" style="margin:0">${c.present} of ${c.total} classes attended</p>${bar(c.pct??0)}<p class="chip" style="margin:8px 0 0">Current streak: ${c.streak} session${c.streak===1?'':'s'}</p></div></div>
  ${c.low?`<p class="chip bad">Below 75%: attend the next ${c.mustAttend} in a row</p>`:c.canMiss!=null?`<p class="chip ok">You can miss ${c.canMiss} more and stay above 75%</p>`:''}
- <div class="row" style="margin-top:10px"><button onclick="openScan()">Scan QR</button><button class="alt" onclick="hist(${c.id})">History</button></div></div>`).join('')}
+ <div class="row" style="margin-top:10px"><button onclick="openScan()">Scan QR</button><button class="alt" onclick="hist(${c.id})">History</button></div>
+ <details class="attendance-calendar" data-course="${c.id}"><summary>Attendance calendar</summary><div id="calendar-${c.id}" class="mute" style="margin-top:8px">Loading calendar…</div></details></article>`}).join('');
+ $$('.attendance-calendar').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)showCalendar(Number(d.dataset.course))}));
+ celebrateNewStreak();
+}
+function celebrateNewStreak(){
+ const reached=[];
+ for(const c of list){const milestone=milestones.filter(n=>c.streak>=n).pop()||0;if(!milestone)continue;
+  const key=`qr-streak-award-${studentRoll}-${c.id}`,previous=Number(localStorage.getItem(key)||0);
+  if(milestone>previous){localStorage.setItem(key,String(milestone));reached.push({course:c.code,milestone})}}
+ if(!reached.length)return;reached.sort((a,b)=>b.milestone-a.milestone);celebrate(`New ${reached[0].milestone}-session streak in ${reached[0].course}!`);
+}
+function celebrate(message){
+ toast(message);if(document.documentElement.dataset.motion==='reduce')return;
+ const layer=document.createElement('div');layer.className='confetti-layer';layer.setAttribute('aria-hidden','true');
+ const colors=['var(--acc)','var(--ok)','var(--warn)','var(--bad)'];
+ for(let i=0;i<36;i++){const bit=document.createElement('i');bit.style.left=Math.random()*100+'%';bit.style.background=colors[i%colors.length];bit.style.setProperty('--drift',(Math.random()*180-90)+'px');bit.style.setProperty('--spin',(360+Math.random()*720)+'deg');bit.style.animationDelay=Math.random()*.35+'s';layer.append(bit)}
+ document.body.append(layer);setTimeout(()=>layer.remove(),3200);
+}
+window.showCalendar=(id,delta=0)=>act(async()=>{
+ const course=list.find(c=>c.id===id),box=$(`#calendar-${id}`);if(!course||!box)return;
+ let month=calendarMonths.get(id)||new Date(new Date().getFullYear(),new Date().getMonth(),1);
+ if(delta)month=new Date(month.getFullYear(),month.getMonth()+delta,1);calendarMonths.set(id,month);
+ if(!calendarHistory.has(id))calendarHistory.set(id,await api(`/api/s/classes/${id}/history`));
+ const rows=calendarHistory.get(id),byDate=new Map();for(const row of rows){if(!byDate.has(row.date))byDate.set(row.date,[]);byDate.get(row.date).push(row)}
+ const year=month.getFullYear(),monthIndex=month.getMonth(),firstDay=new Date(year,monthIndex,1).getDay(),days=new Date(year,monthIndex+1,0).getDate();
+ let cells=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="calendar-weekday">${d}</div>`).join('');
+ for(let i=0;i<firstDay;i++)cells+='<div class="calendar-cell"></div>';
+ for(let day=1;day<=days;day++){const date=`${year}-${String(monthIndex+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,marks=byDate.get(date)||[];
+  let state='',label='No session';if(marks.length){const present=marks.filter(r=>r.status!=='Absent').length;state=present===0?'absent':present===marks.length?(marks.every(r=>r.status==='Late')?'late':'present'):'mixed';label=marks.map(r=>r.status).join(', ')}
+  cells+=`<div class="calendar-cell"><span class="cal-day ${state}" title="${date}: ${esc(label)}" aria-label="${date}: ${esc(label)}">${day}</span></div>`}
+ box.innerHTML=`<div class="calendar-nav"><button type="button" class="alt sm" onclick="showCalendar(${id},-1)" aria-label="Previous month">‹</button><b>${month.toLocaleDateString([], {month:'long',year:'numeric'})}</b><button type="button" class="alt sm" onclick="showCalendar(${id},1)" aria-label="Next month">›</button></div><div class="calendar-grid" role="grid" aria-label="${esc(course.code)} attendance calendar">${cells}</div><div class="calendar-legend"><span><i class="legend-dot present"></i>Present</span><span><i class="legend-dot late"></i>Late</span><span><i class="legend-dot absent"></i>Absent</span></div>`;
+})();
 async function hist(id){const c=list.find(x=>x.id===id),h=await api(`/api/s/classes/${id}/history`);$('#ht').textContent=`${c.code} history`;
  $('#hb').innerHTML=h.map(r=>`<tr><td>${r.date}</td><td>${r.start_time}</td><td class="${r.status}">${r.status}</td></tr>`).join('')||'<tr><td colspan=3>No sessions yet.</td></tr>';$('#hd').showModal()}
 $('#pf').onsubmit=act(async()=>{await api('/api/s/pin','POST',{old:$('#op').value,new:$('#np').value});$('#pf').reset();toast('PIN changed')});

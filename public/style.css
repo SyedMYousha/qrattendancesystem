@@ -7,8 +7,10 @@ h1,h2,h3{margin:0;line-height:1.25}h2{font-size:1.05rem;margin-bottom:12px}h3{fo
 .top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line)}
 .top h1{font-size:1.1rem;margin-right:auto}.top small{color:var(--mute);display:block;font-weight:400}
 .theme-toggle{white-space:nowrap}.theme-fixed{position:fixed;right:16px;top:16px;z-index:10}
+.motion-toggle{white-space:nowrap}.motion-fixed{position:fixed;right:16px;top:62px;z-index:10}
 .offline-game-link{display:none;position:fixed;right:16px;bottom:16px;z-index:20;padding:9px 14px;border-radius:8px;background:var(--acc);color:var(--accink);font-weight:600;text-decoration:none;box-shadow:0 2px 8px #0004}
 .offline-game-link.show{display:block}
+:root[data-motion=reduce] *, :root[data-motion=reduce] *::before, :root[data-motion=reduce] *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
 main{max-width:1050px;margin:0 auto;padding:20px}
 section,.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
 input,select,textarea,button{font:inherit;padding:8px 11px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--ink)}
@@ -25,6 +27,45 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--soft)}
 .chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.8rem;font-weight:600;background:var(--soft);color:var(--acc)}.chip.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}.chip.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
 .badge{background:var(--bad);color:#fff;border-radius:99px;padding:0 7px;font-size:.75rem;margin-left:4px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}.grid .card{margin:0}
+.welcome-panel{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.welcome-panel h2{margin-bottom:4px}
+.welcome-stats{display:flex;flex-wrap:wrap;gap:10px}
+.welcome-stat{border:1px solid var(--line);border-radius:9px;padding:8px 12px;min-width:120px}
+.welcome-stat b{display:block;font-size:1.2rem;line-height:1.2}
+.welcome-stat span{font-size:.8rem;color:var(--mute)}
+.achievement-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.achievement-card{display:grid;justify-items:center;gap:5px;text-align:center;padding:14px 8px;border:1px solid var(--line);border-radius:10px;color:var(--mute)}
+.achievement-card.earned{border-color:var(--ok);color:var(--ink);background:color-mix(in srgb,var(--ok) 8%,var(--card))}
+.achievement-icon{font-size:1.6rem;line-height:1.2}
+.achievement-card small{color:var(--mute)}
+.class-card{border-top:4px solid var(--course-color,var(--acc))}
+.class-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.course-title{display:flex;gap:10px;align-items:center}
+.course-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:10px;background:var(--course-color);color:#fff;font-size:1.2rem}
+.course-title b{display:block}.course-title .mute{font-size:.85rem}
+.class-metrics{display:flex;gap:14px;align-items:center;margin:14px 0}
+.progress-ring{width:72px;height:72px;display:grid;place-items:center;flex:0 0 72px;border-radius:50%;background:conic-gradient(var(--course-color) var(--progress),var(--line) 0)}
+.progress-ring span{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--card);font-weight:700;font-size:1rem}
+.class-metrics .bar{flex:1}
+.class-metrics .big{font-size:1.8rem}
+.attendance-calendar{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.attendance-calendar summary{cursor:pointer;font-weight:600}
+.calendar-nav{display:flex;justify-content:space-between;align-items:center;margin:10px 0}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.calendar-weekday{font-size:.72rem;color:var(--mute);padding:3px 0}
+.calendar-cell{display:grid;place-items:center;min-height:32px}
+.cal-day{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;font-size:.82rem}
+.cal-day.present{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok);font-weight:700}
+.cal-day.late{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn);font-weight:700}
+.cal-day.absent{background:color-mix(in srgb,var(--bad) 17%,transparent);color:var(--bad);font-weight:700}
+.cal-day.mixed{background:linear-gradient(135deg,color-mix(in srgb,var(--ok) 25%,transparent) 50%,color-mix(in srgb,var(--bad) 20%,transparent) 50%);font-weight:700}
+.calendar-legend{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 0;font-size:.75rem;color:var(--mute)}
+.calendar-legend span{display:flex;align-items:center;gap:5px}
+.legend-dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.legend-dot.present{background:var(--ok)}.legend-dot.late{background:var(--warn)}.legend-dot.absent{background:var(--bad)}
+.confetti-layer{position:fixed;inset:0;z-index:98;overflow:hidden;pointer-events:none}
+.confetti-layer i{position:absolute;top:-14px;width:8px;height:12px;border-radius:2px;animation:confetti-fall 2.6s ease-in forwards}
+@keyframes confetti-fall{to{transform:translate3d(var(--drift),110vh,0) rotate(var(--spin));opacity:0}}
 .big{font-size:2.2rem;font-weight:700;line-height:1}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);max-width:min(560px,94vw);width:100%;padding:20px}dialog::backdrop{background:#0008}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:99;max-width:90vw}

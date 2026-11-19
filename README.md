@@ -5,7 +5,7 @@ Node.js + Express (API) · SQLite via built-in `node:sqlite` (`data.db`, created
     npm install
     npm start          (PowerShell blocked? use npm.cmd)
 Open http://localhost:3000. Teacher password: `admin123` (change: set `ADMIN_PASS`).
-Phones must be on the same Wi-Fi. If QR links show the wrong IP: set `BASE_URL=http://<laptop-ip>:3000` before `npm start`, and allow port 3000 in the firewall.
+Phones must be on the same Wi-Fi. QR links automatically use the hostname or IP address from the browser hosting the projector. If deployed behind a reverse proxy or HTTPS host, set `BASE_URL=https://<public-host>` before `npm start`. Allow port 3000 in the firewall.
 
 ## Use
 1. Teacher → Manage classes → create `EE-101 Basics of Electrical Engineering` with day/time/room.
@@ -17,6 +17,8 @@ Phones must be on the same Wi-Fi. If QR links show the wrong IP: set `BASE_URL=h
 ## Personalization and offline game
 - Use **Dark theme** / **Light theme** on each page to switch appearance. The selection is saved in this browser; the first visit follows the device theme.
 - Student class cards show the current streak of consecutive attended sessions for that class. A late attendance counts; an unmarked session breaks the streak. Sessions still in progress are not counted yet.
+- Student dashboards include a personalized greeting, total attendance and top current streak, 5/10/20-session achievement badges, course icons and colors, circular attendance progress, and a per-class attendance calendar.
+- New 5/10/20-session streak milestones trigger a brief confetti celebration. The dashboard's **Reduce motion** control disables the celebration and other CSS motion; the setting is saved in this browser.
 - The app caches its pages for offline use and opens a small jumping game when a page cannot load because the connection is unavailable. Attendance and login still require a connection. Service workers work on `localhost` or HTTPS; plain HTTP on a phone's Wi-Fi IP does not support offline caching.
 
 ## Proxy (false attendance) defences
